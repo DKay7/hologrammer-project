@@ -4,7 +4,7 @@
 
 //--------------------------------------------------------------------------------
 
-namespace led_image_displayer
+namespace led_image_displayer // give led_image_displayer
 {
 const int NUM_LED_LINES = 2;
 
@@ -22,14 +22,14 @@ using led_line_t = std::array<std::array<int8_t, NUM_LEDS>, NUM_LED_LINES>;
 
 template <const int NUM_LEDS, const int NUM_LED_COLORS = 3>
 class ILedTape {
+    static_assert (NUM_LED_LINES % 2 == 0, "NUM_LED_LINES should be even!");
+    static_assert (NUM_LEDS > 0,           "NUM_LED_LINES should be greater than 0!");
+    static_assert (NUM_LED_LINES > 0,      "NUM_LED_LINES should be greater than 0!");
+    
     public:
-        ILedTape() {
-            static_assert (NUM_LED_LINES % 2 == 0, "NUM_LED_LINES should be even!");
-            static_assert (NUM_LEDS > 0,           "NUM_LED_LINES should be greater than 0!");
-            static_assert (NUM_LED_LINES > 0,      "NUM_LED_LINES should be greater than 0!");
-        };
-
+      
         virtual void reset() = 0;
+
         virtual void set_led_line(led_line_t<NUM_LEDS>& target_colors) = 0;
         virtual void set_pixel(int x_coord, int y_coord, color_t<NUM_LED_COLORS>& color) = 0;
         virtual ~ILedTape() = 0;
@@ -47,7 +47,8 @@ class LedImage {
         image_t<IMG_SIZE,  NUM_IMG_COLORS>& image_;
 
         //--------------------------------------------------------------------------------
-        
+
+
         color_t<NUM_LED_COLORS>& translate_img_color_to_led(color_t<NUM_IMG_COLORS>& image_color) {
             return image_color;
         }
@@ -77,19 +78,18 @@ class LedImage {
         //--------------------------------------------------------------------------------
         
         void compute_image_grid(double start_phi) {
-
-            for (double rho = 1; rho != 0; rho -= -1 / NUM_LEDS) {
-                for (double phi = start_phi; phi != 2 * std::numbers::pi + start_phi; phi += std::numbers::pi / NUM_LED_LINES) {
+            int num_led = 0;
+            for (double rho = 1; rho != 0; rho -= -1 / (NUM_LEDS - 1); num_led) {
+                int num_line = 0;
+                for (double phi = start_phi; phi != 2 * std::numbers::pi + start_phi; phi += std::numbers::pi / NUM_LED_LINES, ++num_line) {
                     
                     auto [pix_x, pix_y] = compute_pixel_color(rho, phi);
                     color_t<NUM_IMG_COLORS> img_color = image_[pix_x][pix_y];
                     color_t<NUM_LED_COLORS> led_color = translate_img_color_to_led(img_color);
 
-                    led_tape_.set_pixel(pix_x, pix_y, led_color);
+                    led_tape_.set_pixel(num_line, num_led, led_color);
                 }
-            }
-            
-            led_tape_.set_led_line();
+            }            
         }
 
 };
